@@ -1,26 +1,28 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from flask import Flask, render_template, request, jsonify
-from flask_mail import Mail, Message
+import base64
+import io
+import logging
 import pickle
+import re
+import sys
+import threading
+from datetime import datetime
+
+# ✅ Correct Gemini import
+import google.generativeai as genai
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
-import matplotlib.pyplot as plt
-import io
-import base64
-import logging
-import sys
-import re
-import threading
-from datetime import datetime
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
-
-# ✅ Correct Gemini import
-import google.generativeai as genai
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
