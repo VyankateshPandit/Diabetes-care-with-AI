@@ -10,58 +10,32 @@
       background-image: radial-gradient(#dbeafe 1px, transparent 1px);
       background-size: 20px 20px;
     }
-
-    .navbar {
-      background-color: #1d4ed8;
-      color: #ffffff;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-
-    .navbar-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .navbar-title {
-      font-size: 1.75rem;
-      font-weight: 800;
-    }
-
-    .navbar-links {
-      list-style: none;
-      display: flex;
-      gap: 1.5rem;
-      margin: 0;
-      padding: 0;
-      font-size: 1.05rem;
-      font-weight: 600;
-    }
-
-    .navbar-links a {
-      color: #e5e7eb;
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
-
-    .navbar-links a:hover {
-      color: #bfdbfe;
-    }
-
-    /* Smooth fade-in for result */
     #result.show {
       animation: fadeIn 0.7s ease forwards;
     }
-
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+    .category-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .category-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .loading-spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -83,11 +57,10 @@
   </header>
 
   <main class="flex-grow flex items-center justify-center p-6">
-    <div class="max-w-lg w-full bg-white/30 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div class="max-w-2xl w-full bg-white/30 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
       <h2 class="text-3xl font-extrabold mb-6 text-center text-blue-800 tracking-wide">🌿 Personalized Lifestyle Plan</h2>
 
       <form id="planForm" class="space-y-5">
-        
         <div>
           <label for="age" class="block font-semibold mb-1 text-gray-700">Age</label>
           <input
@@ -115,6 +88,7 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             required
           />
+          <p class="text-xs text-gray-500 mt-1">Not sure? BMI = weight(kg) / height(m)²</p>
         </div>
 
         <div>
@@ -134,68 +108,140 @@
 
         <button
           type="submit"
-          class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-2.5 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+          id="submitBtn"
+          class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-2.5 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200 flex items-center justify-center gap-2"
         >
-          🔍 Generate Plan
+          <span id="btnText">🔍 Generate Plan</span>
+          <span id="btnSpinner" class="loading-spinner hidden"></span>
         </button>
       </form>
 
-      <div id="result" class="mt-8 p-5 bg-white/80 border border-blue-200 rounded-xl shadow-lg hidden"></div>
+      <div id="result" class="mt-8 hidden"></div>
     </div>
   </main>
 
   <script>
     const form = document.getElementById('planForm');
     const resultDiv = document.getElementById('result');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
+    const categoryIcons = {
+      diet: '🍽️',
+      exercise: '🏃',
+      stress: '🧘',
+      sleep: '😴',
+      monitoring: '📊'
+    };
 
-      const age = Number(form.age.value);
-      const bmi = Number(form.bmi.value);
-      const activity = form.activity.value;
+    const categoryTitles = {
+      diet: 'Diet & Nutrition',
+      exercise: 'Exercise & Activity',
+      stress: 'Stress Management',
+      sleep: 'Sleep & Recovery',
+      monitoring: 'Health Monitoring'
+    };
 
-      let dietTips = '';
-      let exerciseTips = '';
-      let stressTips = '';
+    const categoryColors = {
+      diet: 'from-green-400 to-green-600',
+      exercise: 'from-orange-400 to-orange-600',
+      stress: 'from-purple-400 to-purple-600',
+      sleep: 'from-indigo-400 to-indigo-600',
+      monitoring: 'from-red-400 to-red-600'
+    };
 
-      // Diet tips logic
-      if (bmi >= 30) {
-        dietTips = 'Focus on a low-calorie, nutrient-dense diet rich in vegetables, whole grains, and lean proteins.';
-      } else if (bmi >= 25) {
-        dietTips = 'Maintain a balanced diet with moderate portions, including plenty of fiber and healthy fats.';
-      } else {
-        dietTips = 'Eat a variety of foods to meet nutritional needs and maintain a healthy weight.';
-      }
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      btnText.textContent = loading ? 'Generating...' : '🔍 Generate Plan';
+      btnSpinner.classList.toggle('hidden', !loading);
+      submitBtn.classList.toggle('opacity-75', loading);
+    }
 
-      // Exercise tips logic
-      if (activity === 'low') {
-        exerciseTips = 'Start with light activities like walking 30 mins daily, gradually increasing intensity.';
-      } else if (activity === 'moderate') {
-        exerciseTips = 'Incorporate cardio, strength, and flexibility exercises 3-5 times a week.';
-      } else {
-        exerciseTips = 'Maintain your high activity level, and ensure proper rest and recovery.';
-      }
-
-      // Stress management tips logic
-      if (age >= 50) {
-        stressTips = 'Practice mindfulness, meditation, or yoga regularly to reduce stress and support heart health.';
-      } else {
-        stressTips = 'Engage in hobbies, social activities, and relaxation techniques to manage stress effectively.';
-      }
-
-      const planHtml = `
-        <h3 class="text-2xl font-semibold mb-4 text-blue-700">🧠 Your Custom Lifestyle Plan</h3>
-        <ul class="list-disc list-inside space-y-2 text-gray-800">
-          <li><strong>🍽️ Diet:</strong> ${dietTips}</li>
-          <li><strong>🏃 Exercise:</strong> ${exerciseTips}</li>
-          <li><strong>🧘 Stress Management:</strong> ${stressTips}</li>
-        </ul>
+    function renderPlan(data) {
+      const { plan, profile, source } = data;
+      
+      let profileHtml = `
+        <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <h3 class="text-lg font-semibold text-blue-800 mb-2">📋 Your Profile</h3>
+          <div class="grid grid-cols-3 gap-4 text-sm">
+            <div><span class="text-gray-600">Age:</span> <strong>${profile.age}</strong> (${profile.age_group})</div>
+            <div><span class="text-gray-600">BMI:</span> <strong>${profile.bmi}</strong> (${profile.bmi_category})</div>
+            <div><span class="text-gray-600">Activity:</span> <strong class="capitalize">${profile.activity}</strong></div>
+          </div>
+        </div>
       `;
 
-      resultDiv.innerHTML = planHtml;
+      let planHtml = '<h3 class="text-2xl font-semibold mb-4 text-blue-700">🧠 Your Custom Lifestyle Plan</h3>';
+      planHtml += '<div class="grid gap-4">';
+
+      for (const [category, tips] of Object.entries(plan)) {
+        if (tips && tips.length > 0) {
+          planHtml += `
+            <div class="category-card p-4 bg-white/80 rounded-xl border border-gray-200 shadow-sm">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-2xl">${categoryIcons[category] || '📌'}</span>
+                <h4 class="font-semibold text-gray-800">${categoryTitles[category] || category}</h4>
+              </div>
+              <ul class="space-y-2">
+                ${tips.map(tip => `<li class="flex items-start gap-2 text-gray-700"><span class="text-green-500 mt-1">✓</span><span>${tip}</span></li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+      }
+
+      planHtml += '</div>';
+      
+      if (source === 'ai') {
+        planHtml += '<p class="text-xs text-gray-500 mt-4 text-center">✨ Personalized with AI</p>';
+      }
+
+      resultDiv.innerHTML = profileHtml + planHtml;
       resultDiv.classList.remove('hidden');
       resultDiv.classList.add('show');
+    }
+
+    function renderError(message) {
+      resultDiv.innerHTML = `
+        <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+          <strong>Error:</strong> ${message}
+        </div>
+      `;
+      resultDiv.classList.remove('hidden');
+      resultDiv.classList.add('show');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLoading(true);
+
+      const formData = {
+        age: form.age.value,
+        bmi: form.bmi.value,
+        activity: form.activity.value
+      };
+
+      try {
+        const response = await fetch('/api/lifestyle-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to generate plan');
+        }
+
+        renderPlan(data);
+      } catch (error) {
+        console.error('Error:', error);
+        renderError(error.message || 'Something went wrong. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     });
   </script>
 </body>

@@ -163,6 +163,211 @@ def life():
     return render_template('life.html')
 
 
+@app.route('/api/lifestyle-plan', methods=['POST'])
+def generate_lifestyle_plan():
+    """Generate a personalized lifestyle plan based on user inputs."""
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    age = data.get('age')
+    bmi = data.get('bmi')
+    activity = data.get('activity')
+    
+    # Validate inputs
+    if not all([age, bmi, activity]):
+        return jsonify({'error': 'Age, BMI, and activity level are required'}), 400
+    
+    try:
+        age = int(age)
+        bmi = float(bmi)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid age or BMI value'}), 400
+    
+    if age < 1 or age > 120:
+        return jsonify({'error': 'Age must be between 1 and 120'}), 400
+    if bmi < 10 or bmi > 50:
+        return jsonify({'error': 'BMI must be between 10 and 50'}), 400
+    if activity not in ['low', 'moderate', 'high']:
+        return jsonify({'error': 'Activity must be low, moderate, or high'}), 400
+    
+    # Determine BMI category
+    if bmi < 18.5:
+        bmi_category = 'underweight'
+    elif bmi < 25:
+        bmi_category = 'normal weight'
+    elif bmi < 30:
+        bmi_category = 'overweight'
+    else:
+        bmi_category = 'obese'
+    
+    # Determine age group
+    if age < 30:
+        age_group = 'young adult'
+    elif age < 50:
+        age_group = 'middle-aged adult'
+    elif age < 65:
+        age_group = 'older adult'
+    else:
+        age_group = 'senior'
+    
+    # Try to get AI-generated plan
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            genai.configure(api_key=api_key)
+            ai_model = genai.GenerativeModel("gemini-2.5-flash")
+            
+            prompt = f"""Generate a personalized lifestyle plan for diabetes prevention/management with these details:
+- Age: {age} years ({age_group})
+- BMI: {bmi} ({bmi_category})
+- Physical Activity Level: {activity}
+
+Provide specific, actionable recommendations in these categories:
+1. Diet (3-4 specific tips)
+2. Exercise (3-4 specific recommendations based on their activity level)
+3. Stress Management (2-3 techniques)
+4. Sleep & Recovery (2-3 tips)
+5. Health Monitoring (2-3 suggestions)
+
+Keep each tip concise (1-2 sentences). Focus on diabetes-relevant advice. Format as JSON with keys: diet, exercise, stress, sleep, monitoring (each containing an array of strings)."""
+
+            response = ai_model.generate_content(prompt)
+            response_text = response.text
+            
+            # Extract JSON from response
+            import json
+            json_match = re.search(r'\{[\s\S]*\}', response_text)
+            if json_match:
+                plan = json.loads(json_match.group())
+                return jsonify({
+                    'success': True,
+                    'plan': plan,
+                    'profile': {
+                        'age': age,
+                        'age_group': age_group,
+                        'bmi': bmi,
+                        'bmi_category': bmi_category,
+                        'activity': activity
+                    },
+                    'source': 'ai'
+                })
+    except Exception as e:
+        logging.warning(f"AI plan generation failed, using fallback: {e}")
+    
+    # Fallback: Rule-based plan generation
+    plan = generate_fallback_plan(age, bmi, bmi_category, activity, age_group)
+    
+    return jsonify({
+        'success': True,
+        'plan': plan,
+        'profile': {
+            'age': age,
+            'age_group': age_group,
+            'bmi': bmi,
+            'bmi_category': bmi_category,
+            'activity': activity
+        },
+        'source': 'rules'
+    })
+
+
+def generate_fallback_plan(age, bmi, bmi_category, activity, age_group):
+    """Generate a rule-based lifestyle plan as fallback."""
+    plan = {'diet': [], 'exercise': [], 'stress': [], 'sleep': [], 'monitoring': []}
+    
+    # Diet recommendations based on BMI
+    if bmi_category == 'underweight':
+        plan['diet'] = [
+            'Increase caloric intake with nutrient-dense foods like nuts, avocados, and whole grains.',
+            'Eat 5-6 smaller meals throughout the day to boost calorie consumption.',
+            'Include protein-rich foods at every meal to support healthy weight gain.',
+            'Consider healthy smoothies with fruits, yogurt, and nut butters.'
+        ]
+    elif bmi_category == 'normal weight':
+        plan['diet'] = [
+            'Maintain a balanced diet with plenty of vegetables, lean proteins, and whole grains.',
+            'Practice portion control and mindful eating habits.',
+            'Limit processed foods and added sugars to prevent blood sugar spikes.',
+            'Stay hydrated with water and limit sugary beverages.'
+        ]
+    elif bmi_category == 'overweight':
+        plan['diet'] = [
+            'Focus on a moderate calorie deficit with nutrient-dense, low-glycemic foods.',
+            'Fill half your plate with non-starchy vegetables at each meal.',
+            'Choose lean proteins and limit saturated fats.',
+            'Reduce refined carbohydrates and opt for whole grain alternatives.'
+        ]
+    else:  # obese
+        plan['diet'] = [
+            'Work with a dietitian to create a sustainable calorie-controlled meal plan.',
+            'Prioritize high-fiber foods to improve satiety and blood sugar control.',
+            'Eliminate sugary drinks and limit fruit juices.',
+            'Practice meal prepping to avoid unhealthy food choices.'
+        ]
+    
+    # Exercise recommendations based on activity level
+    if activity == 'low':
+        plan['exercise'] = [
+            'Start with 15-20 minute walks daily and gradually increase duration.',
+            'Try chair exercises or gentle stretching if mobility is limited.',
+            'Set reminders to stand and move every hour if you have a sedentary job.',
+            'Consider swimming or water aerobics for low-impact cardio.'
+        ]
+    elif activity == 'moderate':
+        plan['exercise'] = [
+            'Aim for 150 minutes of moderate aerobic activity per week.',
+            'Add 2-3 strength training sessions to build muscle and improve insulin sensitivity.',
+            'Include flexibility exercises like yoga or stretching.',
+            'Try interval training to boost cardiovascular health.'
+        ]
+    else:  # high
+        plan['exercise'] = [
+            'Maintain your excellent activity level with varied workouts.',
+            'Ensure adequate rest days to prevent overtraining.',
+            'Focus on proper nutrition timing around workouts.',
+            'Consider working with a trainer to optimize your routine.'
+        ]
+    
+    # Stress management based on age
+    if age >= 50:
+        plan['stress'] = [
+            'Practice daily meditation or deep breathing exercises for 10-15 minutes.',
+            'Join social groups or community activities to stay connected.',
+            'Consider gentle yoga or tai chi for combined physical and mental benefits.'
+        ]
+    else:
+        plan['stress'] = [
+            'Identify stress triggers and develop healthy coping mechanisms.',
+            'Schedule regular breaks and leisure activities.',
+            'Practice mindfulness or use stress-management apps.'
+        ]
+    
+    # Sleep recommendations
+    if age >= 65:
+        plan['sleep'] = [
+            'Aim for 7-8 hours of sleep with a consistent bedtime routine.',
+            'Limit daytime naps to 20-30 minutes if needed.',
+            'Avoid screens and caffeine at least 2 hours before bed.'
+        ]
+    else:
+        plan['sleep'] = [
+            'Prioritize 7-9 hours of quality sleep each night.',
+            'Create a dark, cool, and quiet sleep environment.',
+            'Maintain consistent sleep and wake times, even on weekends.'
+        ]
+    
+    # Health monitoring
+    plan['monitoring'] = [
+        'Check blood glucose levels as recommended by your healthcare provider.',
+        'Monitor blood pressure regularly, especially if overweight.',
+        'Schedule regular check-ups and diabetes screenings.'
+    ]
+    
+    return plan
+
+
 @app.route('/generate', methods=['POST'])
 def chat_gemini():
     data = request.get_json()
@@ -355,13 +560,10 @@ def posts_api():
 
 
 # --- Notification System ---
-import uuid
-
 
 def extract_mentions(content):
     """Extract @username mentions from post content."""
     return re.findall(r'@(\w+)', content)
-
 
 
 def send_email_notification(to_email, subject, body):
@@ -381,11 +583,10 @@ def send_email_notification(to_email, subject, body):
         return False
 
 
-
 def create_notification(user_id, notif_type, message, post_id=None):
     """Create an in-app notification."""
     notification = {
-        'id': str(uuid.uuid4()),
+        'id': len(notifications) + 1,
         'user_id': user_id,
         'type': notif_type,
         'message': message,
@@ -395,7 +596,6 @@ def create_notification(user_id, notif_type, message, post_id=None):
     }
     notifications.append(notification)
     return notification
-
 
 
 def process_post_notifications(post):
@@ -415,7 +615,7 @@ def process_post_notifications(post):
                 # Create in-app notification
                 create_notification(
                     original_author, 
-                    'reply',
+                    'reply', 
                     f"Someone replied to your post",
                     post_id
                 )
@@ -448,10 +648,8 @@ def process_post_notifications(post):
                 'mention',
                 f"@{author_username} mentioned you in a post",
                 post_id
-            post_id
             )
             logging.info(f"Created mention notification for {mentioned_user}")
-            user = users[mentioned_user]
             if user.get('preferences', {}).get('email_mentions', True):
                 send_email_notification(
                     user['email'],

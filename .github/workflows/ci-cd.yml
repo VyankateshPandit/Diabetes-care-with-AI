@@ -85,7 +85,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 black isort pytest
+          pip install flake8 black isort
 
       - name: Run Black (code formatting)
         run: black --check --diff . || echo "::warning::Code formatting issues found. Run 'black .' to fix."
