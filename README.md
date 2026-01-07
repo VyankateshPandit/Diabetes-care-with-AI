@@ -18,7 +18,6 @@ A comprehensive web-based platform for diabetes risk assessment, health data vis
 - [Project Structure](#project-structure)
 - [API Endpoints](#api-endpoints)
 - [Contributing](#contributing)
-- [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 ---
@@ -59,6 +58,13 @@ The core feature uses a machine learning model trained on the Pima Indians Diabe
 | Age | Age of the individual | Years |
 
 The model processes these inputs through a StandardScaler for normalization and returns a binary prediction (Diabetic / Not Diabetic).
+
+### Note on Prediction Inputs
+
+The diabetes prediction model is trained on the Pima Indians Diabetes Dataset.
+Due to limitations of the dataset, gender and individual height/weight values are not included as input features.
+BMI is used as a combined indicator of height and weight.
+
 
 ### 2. Data Exploration Dashboard
 
@@ -385,155 +391,9 @@ curl http://localhost:5000/api/posts
 
 ## Contributing
 
-We welcome contributions from developers of all skill levels. Here's how you can contribute:
+We welcome contributions from developers of all skill levels.
 
-### Setting Up for Development
-
-```bash
-# Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/diabetes-care-home.git
-cd diabetes-care-home
-
-# Add upstream remote
-git remote add upstream https://github.com/original-owner/diabetes-care-home.git
-
-# Create virtual environment and install dependencies
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-```
-
-### Making Changes
-
-```bash
-# Create a new branch for your feature
-git checkout -b feature/your-feature-name
-
-# Make your changes...
-
-# Stage and commit your changes
-git add .
-git commit -m "feat: add your feature description"
-
-# Push to your fork
-git push origin feature/your-feature-name
-```
-
-### Commit Message Convention
-
-Use conventional commit messages:
-- `feat:` — New feature
-- `fix:` — Bug fix
-- `docs:` — Documentation changes
-- `style:` — Code style changes (formatting, etc.)
-- `refactor:` — Code refactoring
-- `test:` — Adding or updating tests
-- `chore:` — Maintenance tasks
-
-### Submitting a Pull Request
-
-1. Go to your fork on GitHub
-2. Click "Compare & pull request"
-3. Fill in the PR template with:
-   - Description of changes
-   - Related issue number (if applicable)
-   - Screenshots (for UI changes)
-4. Submit the pull request
-
-### Areas for Contribution
-
-| Area | Description | Difficulty |
-|------|-------------|------------|
-| Bug Fixes | Fix reported issues | Beginner |
-| Documentation | Improve README, add comments | Beginner |
-| UI/UX | Enhance design, responsiveness | Intermediate |
-| Testing | Add unit/integration tests | Intermediate |
-| Accessibility | Improve a11y compliance | Intermediate |
-| Performance | Optimize loading, caching | Advanced |
-| New Features | Add new functionality | Advanced |
-| Localization | Add multi-language support | Advanced |
-
-### Reporting Issues
-
-Use the [GitHub Issues](../../issues) page to report bugs or request features:
-
-```markdown
-**Bug Report Template:**
-
-**Description:** Clear description of the bug
-
-**Steps to Reproduce:**
-1. Go to '...'
-2. Click on '...'
-3. See error
-
-**Expected Behavior:** What should happen
-
-**Actual Behavior:** What actually happens
-
-**Environment:**
-- OS: [e.g., Windows 11]
-- Browser: [e.g., Chrome 120]
-- Python Version: [e.g., 3.10]
-```
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-**1. ModuleNotFoundError: No module named 'flask'**
-```bash
-# Ensure virtual environment is activated
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # macOS/Linux
-
-# Reinstall dependencies
-pip install -r requirements.txt
-```
-
-**2. GEMINI_API_KEY not found error**
-```bash
-# Verify .env file exists and contains the key
-type .env  # Windows
-cat .env   # macOS/Linux
-
-# Ensure python-dotenv is installed
-pip install python-dotenv
-```
-
-**3. Model file not found (diabetes_model.pkl)**
-```bash
-# Check if file exists
-dir *.pkl  # Windows
-ls *.pkl   # macOS/Linux
-
-# If missing, retrain using the notebook
-jupyter notebook train.ipynb
-```
-
-**4. Port 5000 already in use**
-```bash
-# Windows: Find and kill process using port 5000
-netstat -ano | findstr :5000
-taskkill /PID <PID_NUMBER> /F
-
-# macOS/Linux
-lsof -i :5000
-kill -9 <PID_NUMBER>
-
-# Or run on a different port
-python app.py  # Modify PORT in app.py or set PORT env variable
-```
-
-**5. Plotly charts not rendering**
-```bash
-# Ensure plotly is installed
-pip install plotly
-
-# Clear browser cache and refresh
-```
+Follow the Code Of Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 
 
 ---
 

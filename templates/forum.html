@@ -245,7 +245,7 @@
         →</button>
     </div>
   </main>
-  <footer class="bg-blue-50 text-center text-gray-500 text-sm py-4 border-t mt-8">© 2026 Diabetes Care Forum. Empowering lives, one post at a time.</footer>
+  <footer class="bg-blue-50 text-center text-gray-500 text-sm py-4 border-t mt-8">© {{ current_year }} Diabetes Care Forum. Empowering lives, one post at a time.</footer>
 
   <!-- Toast Notification Container with ARIA live region -->
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2" role="alert" aria-live="assertive" aria-atomic="true"></div>
@@ -304,8 +304,8 @@
     const prevPageBtn = $('prevPage'), nextPageBtn = $('nextPage'), pageInfo = $('pageInfo');
     const notificationBell = $('notificationBell'), notificationBadge = $('notificationBadge');
     const notificationDropdown = $('notificationDropdown'), notificationList = $('notificationList');
-    const markAllReadBtn = $('markAllRead'), openSettingsBtn = $('openSettings');
-    const settingsModal = $('settingsModal'), saveSettingsBtn = $('saveSettings');
+    const markAllReadBtn = $('markAllRead'), openSettingsBtn = $('openSettings'),
+          settingsModal = $('settingsModal'), saveSettingsBtn = $('saveSettings');
 
     let currentUser = JSON.parse(localStorage.getItem('forumUser')) || null;
     const filterState = { search: '', startDate: null, endDate: null, page: 1, perPage: 10 };
